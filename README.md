@@ -65,12 +65,19 @@ sh answer.sh result level1
 	* ただし，make でコンパイルが基本
 * docs
 	* 説明用のパワーポイントやpdfファイルが入ってる
-* dataset
-	* 演習のためのデータセットを作るプログラム（演習するときは必要ない）
+
+
+## 最終テスト用データセット 
+(最終テスト用のデータセット)[https://github.com/fukushimalab/advanced_programming_dataset]
+1.67GBあるため本体から分離しています．
+finalにコピーして使ってください．
+なお，各画像はpngで圧縮されています．
+適切に処理してください．
 
 # 備考
 エラーが閾値以下の場合に，ファイルを書き込む仕様である．
 つまり，閾値以下のものが2つ以上あった場合，どちらを正解とするかを判断する機構がないため，2つ以上の閾値以下の値を見つけた場合は，エラーになる可能性がある．
+
 
 # CSEの情報（2023年～）：
 * 各自端末 [Intel Core-i5 11500T](https://www.intel.co.jp/content/www/jp/ja/products/sku/212272/intel-core-i511500t-processor-12m-cache-up-to-3-90-ghz/specifications.html)（1.5GHz，6コア，12スレッド）2号館
