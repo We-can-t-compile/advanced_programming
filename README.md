@@ -1,12 +1,7 @@
-https://drive.google.com/file/d/1SH5ki2y2cwqAgNfPCvu9Z5a-MigWFUk8/view?usp=sharing
-
 # プログラミング応用
 名古屋工業大学情報工学科3年 プログラミング応用講義資料 テンプレートマッチング課題用プログラム
 
 [説明資料（途中で読み込みが止まるので，右クリックしてダウンロードを推奨）](./docs/advanced_programming_signal_processing.pdf)
-
-## Todo for 2024
-- [ ] finalをたくさん作ってどこかを選ぶ形に変更．
 
 ## 達成目標
 ある目的を達成するには，すべての機能を一つの言語だけでプログラムする必要はない．
@@ -69,10 +64,16 @@ sh answer.sh result level1
 
 ## 最終テスト用データセット 
 (最終テスト用のデータセット)[https://github.com/fukushimalab/advanced_programming_dataset]
-1.67GBあるため本体から分離しています．
+
+データセットが20種類で合計1.67GBあるため本体から分離しています．
 finalにコピーして使ってください．
+どれでテストするかは，テストの当日に発表します．
+
 なお，各画像はpngで圧縮されています．
 適切に処理してください．
+
+なおデータセット1だけはgoogleドライブに別途上げています．
+https://drive.google.com/file/d/1SH5ki2y2cwqAgNfPCvu9Z5a-MigWFUk8/view?usp=sharing
 
 # 備考
 エラーが閾値以下の場合に，ファイルを書き込む仕様である．
