@@ -1,1 +1,0 @@
-mokuzai_hakobu 100 8 64 64 0
