@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
-#include <math.h>
 //#include <omp.h>
 
 void templateMatchingGray(Image *src, Image *template, Point *position, double *distance)
@@ -14,22 +13,29 @@ void templateMatchingGray(Image *src, Image *template, Point *position, double *
 		return;
 	}
 
-	int min_distance = INT_MAX;
+	long long min_distance = LLONG_MAX;
 	int ret_x = 0;
 	int ret_y = 0;
 	int x, y, i, j;
+	int tN = 0;
 	for (y = 0; y < (src->height - template->height); y++)
 	{
 		for (x = 0; x < src->width - template->width; x++)
 		{
-			int distance = 0;
+			long long distance = 0;
+			int N = 0;
+
 			//SSD
 			for (j = 0; j < template->height; j++)
 			{
 				for (i = 0; i < template->width; i++)
 				{
+					if(template->data[j * template->width + i] == 0){
+						continue;
+					}
 					int v = (src->data[(y + j) * src->width + (x + i)] - template->data[j * template->width + i]);
 					distance += v * v;
+					N++;
 				}
 			}
 			if (distance < min_distance)
@@ -38,12 +44,14 @@ void templateMatchingGray(Image *src, Image *template, Point *position, double *
 				ret_x = x;
 				ret_y = y;
 			}
+
+			tN = N;
 		}
 	}
 
 	position->x = ret_x;
 	position->y = ret_y;
-	*distance = sqrt(min_distance) / (template->width * template->height);
+	*distance = sqrt((double)min_distance / (tN == 0 ? 1 : tN));
 }
 
 void templateMatchingColor(Image *src, Image *template, Point *position, double *distance)
@@ -54,15 +62,17 @@ void templateMatchingColor(Image *src, Image *template, Point *position, double 
 		return;
 	}
 
-	int min_distance = INT_MAX;
+	long long min_distance = LLONG_MAX;
 	int ret_x = 0;
 	int ret_y = 0;
 	int x, y, i, j;
+	int tN = 0;
 	for (y = 0; y < (src->height - template->height); y++)
 	{
 		for (x = 0; x < src->width - template->width; x++)
 		{
-			int distance = 0;
+				long long distance = 0;
+			int N = 0;
 			//SSD
 			for (j = 0; j < template->height; j++)
 			{
@@ -70,11 +80,17 @@ void templateMatchingColor(Image *src, Image *template, Point *position, double 
 				{
 					int pt = 3 * ((y + j) * src->width + (x + i));
 					int pt2 = 3 * (j * template->width + i);
+
+					if(template->data[pt2 + 0] == 0 && template->data[pt2 + 1] == 0 && template->data[pt2 + 2] == 0){
+						continue;
+					}
+
 					int r = (src->data[pt + 0] - template->data[pt2 + 0]);
 					int g = (src->data[pt + 1] - template->data[pt2 + 1]);
 					int b = (src->data[pt + 2] - template->data[pt2 + 2]);
 
 					distance += (r * r + g * g + b * b);
+					N++;
 				}
 			}
 			if (distance < min_distance)
@@ -83,12 +99,14 @@ void templateMatchingColor(Image *src, Image *template, Point *position, double 
 				ret_x = x;
 				ret_y = y;
 			}
+
+			tN = N;
 		}
 	}
 
 	position->x = ret_x;
 	position->y = ret_y;
-	*distance = sqrt(min_distance) / (template->width * template->height);
+	*distance = sqrt((double)min_distance / (3 * (tN == 0 ? 1 : tN)));
 }
 
 // test/beach3.ppm template /airgun_women_syufu.ppm 0 0.5 cwp
@@ -132,13 +150,13 @@ int main(int argc, char **argv)
 	if (argc == 6)
 	{
 		char *p = NULL;
-		if ((p = strchr(argv[5], 'c')) != NULL)
+		if (p = strchr(argv[5], 'c') != NULL)
 			clearResult(output_name_txt);
-		if ((p = strchr(argv[5], 'w')) != NULL)
+		if (p = strchr(argv[5], 'w') != NULL)
 			isWriteImageResult = 1;
-		if ((p = strchr(argv[5], 'p')) != NULL)
+		if (p = strchr(argv[5], 'p') != NULL)
 			isPrintResult = 1;
-		if ((p = strchr(argv[5], 'g')) != NULL)
+		if (p = strchr(argv[5], 'g') != NULL)
 			isGray = 1;
 	}
 
