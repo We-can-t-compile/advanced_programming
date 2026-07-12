@@ -4,11 +4,14 @@
 
 for template in "$1"/*.ppm; do
     [ -e "${template}" ] || continue
-    
+
+    template_name=`basename "${template}"`
     for size in 50 100 200; do
-        resized="imgproc/resized_${size}/${template_name}"）
+        resized_dir="imgproc/resized_${size}"
+        resized="${resized_dir}/${template_name}"
+        mkdir -p "${resized_dir}"
         if [ ! -e "${resized}" ]; then
-            convert -resize "${size}%" "${template}" "${resized}"
+            convert "${template}" -resize "${size}%" "${resized}"
         fi
     done
 done

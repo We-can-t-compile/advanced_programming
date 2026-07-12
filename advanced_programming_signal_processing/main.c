@@ -18,12 +18,20 @@ void templateMatchingGray(Image *src, Image *template, Point *position, double *
 	int ret_y = 0;
 	int x, y, i, j;
 	int tN = 0;
+	for (j = 0; j < template->height; j++)
+	{
+		for (i = 0; i < template->width; i++)
+		{
+			if (template->data[j * template->width + i] != 0)
+				tN++;
+		}
+	}
 	for (y = 0; y < (src->height - template->height); y++)
 	{
 		for (x = 0; x < src->width - template->width; x++)
 		{
 			long long distance = 0;
-			int N = 0;
+			int stop = 0;
 
 			//SSD
 			for (j = 0; j < template->height; j++)
@@ -35,17 +43,21 @@ void templateMatchingGray(Image *src, Image *template, Point *position, double *
 					}
 					int v = (src->data[(y + j) * src->width + (x + i)] - template->data[j * template->width + i]);
 					distance += v * v;
-					N++;
+					if (distance >= min_distance)
+					{
+						stop = 1;
+						break;
+					}
 				}
+				if (stop)
+					break;
 			}
-			if (distance < min_distance)
+			if (!stop && distance < min_distance)
 			{
 				min_distance = distance;
 				ret_x = x;
 				ret_y = y;
 			}
-
-			tN = N;
 		}
 	}
 
@@ -67,12 +79,21 @@ void templateMatchingColor(Image *src, Image *template, Point *position, double 
 	int ret_y = 0;
 	int x, y, i, j;
 	int tN = 0;
+	for (j = 0; j < template->height; j++)
+	{
+		for (i = 0; i < template->width; i++)
+		{
+			int pt2 = 3 * (j * template->width + i);
+			if (!(template->data[pt2 + 0] == 0 && template->data[pt2 + 1] == 0 && template->data[pt2 + 2] == 0))
+				tN++;
+		}
+	}
 	for (y = 0; y < (src->height - template->height); y++)
 	{
 		for (x = 0; x < src->width - template->width; x++)
 		{
-				long long distance = 0;
-			int N = 0;
+			long long distance = 0;
+			int stop = 0;
 			//SSD
 			for (j = 0; j < template->height; j++)
 			{
@@ -87,22 +108,26 @@ void templateMatchingColor(Image *src, Image *template, Point *position, double 
 
 					int r = (src->data[pt + 0] - template->data[pt2 + 0]);
 					int g = (src->data[pt + 1] - template->data[pt2 + 1]);
-					int b = (src->data[pt + 2] - template->data[pt2 + 2]);
+						int b = (src->data[pt + 2] - template->data[pt2 + 2]);
 
-					distance += (r * r + g * g + b * b);
-					N++;
+						distance += (r * r + g * g + b * b);
+						if (distance >= min_distance)
+						{
+							stop = 1;
+							break;
+						}
+					}
+					if (stop)
+						break;
+				}
+				if (!stop && distance < min_distance)
+				{
+					min_distance = distance;
+					ret_x = x;
+					ret_y = y;
 				}
 			}
-			if (distance < min_distance)
-			{
-				min_distance = distance;
-				ret_x = x;
-				ret_y = y;
-			}
-
-			tN = N;
 		}
-	}
 
 	position->x = ret_x;
 	position->y = ret_y;
@@ -162,6 +187,15 @@ int main(int argc, char **argv)
 
 	Image *img = readPXM(input_file);
 	Image *template = readPXM(template_file);
+	if (img == NULL || template == NULL)
+	{
+		fprintf(stderr, "Failed to read input or template image.\n");
+		if (img != NULL)
+			freeImage(img);
+		if (template != NULL)
+			freeImage(template);
+		return -1;
+	}
 
 	Point result;
 	double distance = 0.0;
