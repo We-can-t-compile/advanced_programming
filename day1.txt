@@ -1,0 +1,287 @@
+モノクロ写真　convert lena_noiseless.png -monochrome lena_monochrome.png
+回転　convert -rotate 90 lena_noiseless.png lena_rotate.png
+ポスタライズ　convert -posterize 4  lena_noiseless.png out.png
+
+雑音消去
+convert lena_noiseless.png -wavelet-denoise 20% out.png
+
+課題1
+レベル１の課題を，コンパイルオプションや実行オプションを変えながら，下記コマンドで実行時間の計測と動作のチェックを行った． 
+time sh run.sh level1
+sh answer.sh result level1
+
+報告はreal(ターンアラウンドタイムだけ)
+
+すべてデフォルト
+real    5m44.385s
+user    5m43.921s
+sys     0m0.181s
+
+オプション-O1
+real    1m4.731s
+user    1m4.337s
+sys     0m0.179s
+
+オプション-O2 
+real    1m2.258s
+user    1m1.853s
+sys     0m0.189s
+
+オプションーO3 
+real    1m2.130s
+user    1m1.763s
+sys     0m0.145s
+
+gcc -w -O3 -o matching main.c imageUtil.c -lm -funroll-all-loops -funroll-loops -funsafe-loop-optimizations
+real    1m0.111s
+user    0m59.704s
+sys     0m0.191s
+
+gcc -w -O3 -o matching main.c imageUtil.c -lm -mtune=native
+real    1m2.383s
+user    1m2.009s
+sys     0m0.145s
+
+gcc -w -Ofast -o matching main.c imageUtil.c -lm -mtune=native -mfpmath=both
+real    1m2.228s
+user    1m1.837s
+sys     0m0.171s
+
+
+cpgにしたとき(c=clear,p=print,g=grayscale)
+
+すべてデフォルト
+real    2m53.222s
+user    2m52.799s
+sys     0m0.167s
+
+オプション-O1
+real    0m35.215s
+user    0m34.812s
+sys     0m0.180s
+
+オプション-O2 
+real    0m34.650s
+user    0m34.241s
+sys     0m0.189s
+
+オプションーO3 
+real    0m5.185s
+user    0m4.814s
+sys     0m0.145s
+
+gcc -w -O3 -o matching main.c imageUtil.c -lm -funroll-all-loops -funroll-loops -funsafe-loop-optimizations
+real    0m5.023s
+user    0m4.644s
+sys     0m0.162s
+
+gcc -w -O3 -o matching main.c imageUtil.c -lm -mtune=native
+real    0m5.167s
+user    0m4.775s
+sys     0m0.174s
+
+gcc -w -Ofast -o matching main.c imageUtil.c -lm -mtune=native -mfpmath=both
+real    0m5.234s
+user    0m4.868s
+sys     0m0.153s
+
+全ての場合の正解率は1005であった。
+
+考察
+最適化レベルを上げると処理がはやくなった。
+また、grayscaleにしても処理が早くなった。
+-o1,o2,o3はそれぞれコードを書き換えているけど、その書換の量が数字が増えていくと多くなっていく
+それは内部では以下のことを行っているからである(S1)
+
+| オプション    | 主な実装内容                           | 目的     |
+| -------- | -------------------------------- | ------ |
+| `-O0`    | 最適化なし                            | デバッグ   |
+| `-O1`    | 基本的なコード削減、定数畳み込み、不要処理削除          | 軽量高速化  |
+| `-O2`    | `-O1` + 関数展開、共通式削除、ループ最適化など      | 実用的高速化 |
+| `-O3`    | `-O2` + ループ展開、SIMD化、より積極的なインライン化 | 速度最大化  |
+| `-Ofast` | `-O3` + 浮動小数点規則を緩和               | 速度最優先  |
+
+実行時になるべく計算を行わないことや並列実行などで速さを稼いでいる
+しかし、関数が複雑になったり浮動小数点演算で誤差が発生する場合は-03や-0fastは思わぬエラーになると考えた。
+また、グレースケールにすると処理時間が２倍から３倍ほど短くなっている
+これは４重ループ内の一回のループで計算する量がcolorではr,g,bの３回に対して、grayscaleにすると一回になるからだろう
+また、キャッシュに乗りやすい側面もあるだろう
+SIMD化というものもあるらしい。
+
+ソース
+(S1) https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html?utm_source=chatgpt.com
+
+課題２
+convert -median 3　を採用(ノイズ除去)
+run.shの閾値などを変更してファイルが見つかるかを検証及びテストが通るかを検証
+makefileはgcc -w -O3 -o matching main.c imageUtil.c -lm -mtune=nativeを採用
+cp とpはそのまま(一旦graysclaeなしで検証)
+
+小さいほど厳しくなるからまずは1.0あたりから検証
+時間
+real    1m5.095s
+user    1m7.980s
+sys     0m1.138s
+テスト
+成功10/10
+
+閾値を0.5に変更
+時間
+real    1m4.862s
+user    1m7.909s
+sys     0m1.122s
+テスト
+成功1/10(not foundが多すぎた＝条件が厳しすぎた)
+
+閾値を0.75に変更
+real    1m4.501s
+user    1m7.494s
+sys     0m1.093s
+テスト
+成功8/10(まだ見つかっていないファイルが存在した＝条件が厳しい)
+
+
+一旦閾値の検証は辞めにして高速化に入る
+閾値は1.0に固定し、各コンパイルオプションの違いをまずは見る
+gcc -w -O3 -o matching main.c imageUtil.c -lm
+時間
+real    1m3.851s
+user    1m6.799s
+sys     0m1.129s
+
+gcc -w -O3 -o matching main.c imageUtil.c -lm -funroll-all-loops -funroll-loops -funsafe-loop-optimizations
+real    1m1.418s
+user    1m4.333s
+sys     0m1.141s
+
+gcc -w -O3 -o matching main.c imageUtil.c -lm -mtune=native
+real    1m4.709s
+user    1m7.566s
+sys     0m1.145s
+
+gcc -w -Ofast -o matching main.c imageUtil.c -lm -mtune=native -mfpmath=both
+real    1m3.895s
+user    1m6.873s
+sys     0m1.088s
+
+次にグレースケールを試す
+gcc -w -O3 -o matching main.c imageUtil.c -lm
+時間
+real    1m3.851s
+user    1m6.799s
+sys     0m1.129s
+
+gcc -w -O3 -o matching main.c imageUtil.c -lm -funroll-all-loops -funroll-loops -funsafe-loop-optimizations
+real    1m1.418s
+user    1m4.333s
+sys     0m1.141s
+
+gcc -w -O3 -o matching main.c imageUtil.c -lm -mtune=native
+real    1m4.709s
+user    1m7.566s
+sys     0m1.145s
+
+これらはテスト10/10であった
+
+gcc -w -Ofast -o matching main.c imageUtil.c -lm -mtune=native -mfpmath=both
+real    0m6.836s
+user    0m9.855s
+sys     0m1.078s
+
+4/10になっていた　(複数マッチすると判定してしまっている)
+
+閾値を変更してみる
+
+0.8
+real    0m6.823s
+user    0m9.796s
+sys     0m1.142s
+
+10/10なった。
+
+コンパイラも変更する
+gcc -w -O3 -o matching main.c imageUtil.c -lm -funroll-all-loops -funroll-loops -funsafe-loop-optimizations
+real    0m6.557s
+user    0m9.445s
+sys     0m1.155s
+
+cc -w -O3 -o matching main.c imageUtil.c -lm -mtune=native
+real    0m6.710s
+user    0m9.718s
+sys     0m1.043s
+
+
+
+最終結果
+run.sh 
+then
+	    ./matching $name "${template}" $rotation 0.8 cpg
+	    x=1
+	else
+	    ./matching $name "${template}" $rotation 0.8 pg
+	fi
+makefile
+gcc -w -O3 -o matching main.c imageUtil.c -lm -funroll-all-loops -funroll-loops -funsafe-loop-optimizations
+時間
+real    0m6.557s
+テスト
+10/10
+
+課題３
+コントラストが0.5,1.0,1.5,2.0のうちのどれか
+コントラストを変更させる
+-equalizeを選択(S1)→自動でコントラスト調整してくれるらしい(でもだいたいこういうのは遅そう)
+はじめはいつもの通り
+閾値は1.0 コンパイラはgcc -w -O3 -o matching main.c imageUtil.c -lmで、cpgにした
+
+ソース
+(S1) https://qiita.com/yoya/items/979c1099909ce983830d
+
+real    0m4.823s
+user    0m5.413s
+sys     0m0.181s
+CORRECT RATE: 4/10(found数が多すぎる)
+
+閾値を0.8に変更
+real    0m4.796s
+user    0m6.007s
+sys     0m0.227s
+CORRECT RATE: 10/10
+
+コンパイルコマンドを変更
+gcc -w -O3 -o matching main.c imageUtil.c -lm -funroll-all-loops -funroll-loops -funsafe-loop-optimizations
+real    0m4.530s
+user    0m5.307s
+sys     0m0.195s
+CORRECT RATE: 10/10
+
+gcc -w -O3 -o matching main.c imageUtil.c -lm -mtune=native
+real    0m4.699s
+user    0m5.537s
+sys     0m0.165s
+CORRECT RATE: 10/10
+
+gcc -w -Ofast -o matching main.c imageUtil.c -lm -mtune=native -mfpmath=both
+real    0m4.770s
+user    0m5.705s
+sys     0m0.205s
+CORRECT RATE 10/10
+
+最終結果
+comlile gcc -w -O3 -o matching main.c imageUtil.c -lm -funroll-all-loops -funroll-loops -funsafe-loop-optimizations
+run.sh
+ convert -equalize "${image}" "${name}"
+    rotation=0
+    echo $bname:
+    for template in $1/*.ppm; do
+	echo `basename ${template}`
+	if [ $x = 0 ]
+	then
+	    ./matching $name "${template}" $rotation 0.8 cpg
+	    x=1
+	else
+	    ./matching $name "${template}" $rotation 0.8 pg
+	fi
+    done
+real    0m4.530s
+CORRECT RATE: 10/10

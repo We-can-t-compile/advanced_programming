@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
-//#include <omp.h>
+#include <omp.h>
 
 void templateMatchingGray(Image *src, Image *template, Point *position, double *distance)
 {
@@ -16,7 +16,7 @@ void templateMatchingGray(Image *src, Image *template, Point *position, double *
 	long long min_distance = LLONG_MAX;
 	int ret_x = 0;
 	int ret_y = 0;
-	int x, y, i, j;
+	int i, j;
 	int tN = 0;
 	for (j = 0; j < template->height; j++)
 	{
@@ -26,37 +26,59 @@ void templateMatchingGray(Image *src, Image *template, Point *position, double *
 				tN++;
 		}
 	}
-	for (y = 0; y < (src->height - template->height); y++)
-	{
-		for (x = 0; x < src->width - template->width; x++)
-		{
-			long long distance = 0;
-			int stop = 0;
 
-			//SSD
-			for (j = 0; j < template->height; j++)
+#pragma omp parallel
+	{
+		long long local_min_distance = LLONG_MAX;
+		int local_ret_x = 0;
+		int local_ret_y = 0;
+		int x, y;
+
+#pragma omp for nowait schedule(dynamic)
+		for (y = 0; y < (src->height - template->height); y++)
+		{
+			for (x = 0; x < src->width - template->width; x++)
 			{
-				for (i = 0; i < template->width; i++)
+				long long distance = 0;
+				int stop = 0;
+
+				//SSD
+				for (j = 0; j < template->height; j++)
 				{
-					if(template->data[j * template->width + i] == 0){
-						continue;
-					}
-					int v = (src->data[(y + j) * src->width + (x + i)] - template->data[j * template->width + i]);
-					distance += v * v;
-					if (distance >= min_distance)
+					for (i = 0; i < template->width; i++)
 					{
-						stop = 1;
-						break;
+						if(template->data[j * template->width + i] == 0){
+							continue;
+						}
+						int v = (src->data[(y + j) * src->width + (x + i)] - template->data[j * template->width + i]);
+						distance += v * v;
+						if (distance >= local_min_distance)
+						{
+							stop = 1;
+							break;
+						}
 					}
+					if (stop)
+						break;
 				}
-				if (stop)
-					break;
+				if (!stop && (distance < local_min_distance ||
+					(distance == local_min_distance && (y < local_ret_y || (y == local_ret_y && x < local_ret_x)))))
+				{
+					local_min_distance = distance;
+					local_ret_x = x;
+					local_ret_y = y;
+				}
 			}
-			if (!stop && distance < min_distance)
+		}
+
+#pragma omp critical
+		{
+			if (local_min_distance < min_distance ||
+				(local_min_distance == min_distance && (local_ret_y < ret_y || (local_ret_y == ret_y && local_ret_x < ret_x))))
 			{
-				min_distance = distance;
-				ret_x = x;
-				ret_y = y;
+				min_distance = local_min_distance;
+				ret_x = local_ret_x;
+				ret_y = local_ret_y;
 			}
 		}
 	}
@@ -77,7 +99,7 @@ void templateMatchingColor(Image *src, Image *template, Point *position, double 
 	long long min_distance = LLONG_MAX;
 	int ret_x = 0;
 	int ret_y = 0;
-	int x, y, i, j;
+	int i, j;
 	int tN = 0;
 	for (j = 0; j < template->height; j++)
 	{
@@ -88,30 +110,39 @@ void templateMatchingColor(Image *src, Image *template, Point *position, double 
 				tN++;
 		}
 	}
-	for (y = 0; y < (src->height - template->height); y++)
+
+#pragma omp parallel
 	{
-		for (x = 0; x < src->width - template->width; x++)
+		long long local_min_distance = LLONG_MAX;
+		int local_ret_x = 0;
+		int local_ret_y = 0;
+		int x, y;
+
+#pragma omp for nowait schedule(dynamic)
+		for (y = 0; y < (src->height - template->height); y++)
 		{
-			long long distance = 0;
-			int stop = 0;
-			//SSD
-			for (j = 0; j < template->height; j++)
+			for (x = 0; x < src->width - template->width; x++)
 			{
-				for (i = 0; i < template->width; i++)
+				long long distance = 0;
+				int stop = 0;
+				//SSD
+				for (j = 0; j < template->height; j++)
 				{
-					int pt = 3 * ((y + j) * src->width + (x + i));
-					int pt2 = 3 * (j * template->width + i);
+					for (i = 0; i < template->width; i++)
+					{
+						int pt = 3 * ((y + j) * src->width + (x + i));
+						int pt2 = 3 * (j * template->width + i);
 
-					if(template->data[pt2 + 0] == 0 && template->data[pt2 + 1] == 0 && template->data[pt2 + 2] == 0){
-						continue;
-					}
+						if(template->data[pt2 + 0] == 0 && template->data[pt2 + 1] == 0 && template->data[pt2 + 2] == 0){
+							continue;
+						}
 
-					int r = (src->data[pt + 0] - template->data[pt2 + 0]);
-					int g = (src->data[pt + 1] - template->data[pt2 + 1]);
+						int r = (src->data[pt + 0] - template->data[pt2 + 0]);
+						int g = (src->data[pt + 1] - template->data[pt2 + 1]);
 						int b = (src->data[pt + 2] - template->data[pt2 + 2]);
 
 						distance += (r * r + g * g + b * b);
-						if (distance >= min_distance)
+						if (distance >= local_min_distance)
 						{
 							stop = 1;
 							break;
@@ -120,14 +151,27 @@ void templateMatchingColor(Image *src, Image *template, Point *position, double 
 					if (stop)
 						break;
 				}
-				if (!stop && distance < min_distance)
+				if (!stop && (distance < local_min_distance ||
+					(distance == local_min_distance && (y < local_ret_y || (y == local_ret_y && x < local_ret_x)))))
 				{
-					min_distance = distance;
-					ret_x = x;
-					ret_y = y;
+					local_min_distance = distance;
+					local_ret_x = x;
+					local_ret_y = y;
 				}
 			}
 		}
+
+#pragma omp critical
+		{
+			if (local_min_distance < min_distance ||
+				(local_min_distance == min_distance && (local_ret_y < ret_y || (local_ret_y == ret_y && local_ret_x < ret_x))))
+			{
+				min_distance = local_min_distance;
+				ret_x = local_ret_x;
+				ret_y = local_ret_y;
+			}
+		}
+	}
 
 	position->x = ret_x;
 	position->y = ret_y;

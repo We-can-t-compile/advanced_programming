@@ -16,11 +16,18 @@ for template in "$1"/*.ppm; do
     done
 done
 
+threshold=${THRESHOLD:-30.0}
+
 for image in "$1"/test/*.ppm; do
     (
     bname=`basename "${image}"`
     name="imgproc/"$bname
+    result_file="result/${bname%.ppm}.txt"
     x=0    	#
+
+    best_distance=""
+    best_line=""
+
     echo $name
     convert "${image}" "${name}"  # 何もしない画像処理
 #   convert -blur 2x6 "${image}" "${name}"
@@ -36,15 +43,31 @@ for image in "$1"/test/*.ppm; do
 		echo "${template_name}"
         for size in 50 100 200;do
             resized="imgproc/resized_${size}/${template_name}"
-            if [ $x = 0 ]
-            then
-                ./matching "$name" "${resized}" "$rotation" 30.0 cp
-                x=1
-            else
-                ./matching "$name" "${resized}" "$rotation" 30.0 p
+            output=`./matching "$name" "${resized}" "$rotation" 0 p | tail -n 1`
+            result_template_name=`echo "$output" | awk '{print $3}'`
+            x=`echo "$output" | awk '{print $4}'`
+            y=`echo "$output" | awk '{print $5}'`
+            width=`echo "$output" | awk '{print $6}'`
+            height=`echo "$output" | awk '{print $7}'`
+            rot=`echo "$output" | awk '{print $8}'`
+            distance=`echo "$output" | awk '{print $9}'`
+
+            [ -n "$distance" ] || continue
+
+            if [ -z "$best_distance" ] || awk "BEGIN { exit !($distance < $best_distance) }"; then
+                best_distance="$distance"
+                best_line="$result_template_name $x $y $width $height $rot $distance"
             fi
         done
     done
+
+    : > "$result_file"
+    if [ -n "$best_distance" ] && awk "BEGIN { exit !($best_distance < $threshold) }"; then
+        echo "$best_line" > "$result_file"
+        echo "[Best] $best_line"
+    else
+        echo "[Not found] best_distance=$best_distance"
+    fi
     echo ""
     ) &
 done

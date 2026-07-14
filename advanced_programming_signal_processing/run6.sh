@@ -16,6 +16,8 @@ for template in "$1"/*.ppm; do
     done
 done
 
+threshold=${THRESHOLD:-30.0}
+
 for image in "$1"/test/*.ppm; do
     (
     bname=`basename "${image}"`
