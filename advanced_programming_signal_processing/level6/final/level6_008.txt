@@ -1,1 +1,1 @@
-ocean_beach_kinzokutanchi 100 116 64 64 180
+kids_chuunibyou_girl 310 160 79 64 90

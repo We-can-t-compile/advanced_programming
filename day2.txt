@@ -1,0 +1,249 @@
+課題７
+方針　画像処理を並列で実行する
+(ファイルが同じだと書き込みが衝突するのでは？)
+.txtを分ける(おおくする) -> answer.shを変更する？
+
+(画像処理のへいれつの方法)
+
+やったこと
+run.shを変更して各処理を並列に実行して最後にSSDの値を比較した
+また、ファイルの書き込み衝突を避けるためにフォルダを処理ごとで分けて、最後にresultに書き込んだ
+コンパイル方法は
+また、main.cのほうもディレクトリを指定するためのオプションを追加した
+
+levelいくつかを指定するコマンド引数も用意する→無駄な処理を減らす工夫
+
+並列処理もした
+
+
+level1 20/20
+real    0m1.930s
+user    0m19.679s
+sys     0m0.131s
+
+
+level2 20/20
+real    0m48.411s
+user    0m54.519s
+sys     0m2.401s
+
+level3 20/20
+real    0m37.402s
+user    0m38.940s
+sys     0m0.448s
+
+level4 20/20
+real    0m27.756s
+user    0m27.217s
+sys     0m0.165s
+
+
+openMPを使用した
+level1 20/20
+real    0m5.504s
+user    0m57.276s
+sys     0m0.164s
+
+level2 20/20
+real    0m6.383s
+user    1m6.150s
+sys     0m3.451s
+
+level3 20/20
+real    0m5.132s
+user    0m54.846s
+sys     0m0.502s
+
+level4 3/20
+real    0m10.053s
+user    1m48.537s
+sys     0m0.179s
+
+level5 20/20
+real    0m47.160s
+user    8m26.039s
+sys     0m0.871s
+
+level6 20/20
+real    0m48.706s
+user    8m36.737s
+sys     0m0.834s
+
+level7  19/20
+real    2m5.508s
+user    21m46.304s
+sys     0m6.812s
+
+
+なんか変えた
+
+level1 20/20
+real    0m2.917s
+user    0m30.020s
+sys     0m0.118s
+
+level2  20/20
+real    0m3.728s
+user    0m35.059s
+sys     0m0.877s
+
+level3  20/20
+real    0m2.506s
+user    0m25.335s
+sys     0m0.409s
+
+level4  0/0
+real    0m7.188s
+user    1m11.433s
+sys     0m0.137s
+
+level5  20/20
+real    0m36.774s
+user    6m20.195s
+sys     0m0.628s
+
+level6  20/20
+real    0m35.730s
+user    6m12.464s
+sys     0m0.493s
+
+
+より探索を効率化
+threshold由来の初期打ち切り閾値変更
+: level7 の重複計算削除
+
+
+level4  20/20
+real    0m11.035s
+user    1m48.179s
+sys     0m0.146s
+
+level5  20/20
+real    0m5.771s
+user    0m58.432s
+sys     0m0.205s
+
+level6  20/20
+real    0m5.718s
+user    0m55.760s
+sys     0m0.182s
+
+level7  20/20
+real    0m23.200s
+user    3m53.796s
+sys     0m1.567s
+
+edge モードの有効画素リスト前計算
+gray側にもプレスキャンの種を追加
+レベル別の並列配分
+
+level1  20/20
+real    0m0.744s
+user    0m6.499s
+sys     0m0.054s
+
+level2  20/20
+real    0m2.285s
+user    0m21.816s
+sys     0m1.385s
+
+level3  20/20
+real    0m5.515s
+user    0m12.853s
+sys     0m0.417s
+
+level4  20/20
+real    0m6.138s
+user    1m1.157s
+sys     0m0.184s
+
+level5  20/20
+real    0m5.889s
+user    1m1.532s
+sys     0m0.257s
+
+level6  20/20
+real    0m6.025s
+user    0m58.934s
+sys     0m0.250s
+
+level7  20/20
+real    0m17.978s
+user    3m2.918s
+sys     0m1.745s
+
+ノルム下界による O(1) 位置スキップ（gray・color両方、非edgeパス）
+
+level1  20/20
+real    0m0.715s
+user    0m6.523s
+sys     0m0.081s
+
+level2  20/20
+real    0m2.479s
+user    0m22.224s
+sys     0m1.339s
+
+level3  20/20
+real    0m1.503s
+user    0m13.267s
+sys     0m0.421s
+
+level4  20/20
+real    0m6.129s
+user    1m1.252s
+sys     0m0.108s
+
+level5  20/20
+real    0m5.824s
+user    1m0.675s
+sys     0m0.219s
+
+level6  20/20
+real    0m5.615s
+user    0m59.261s
+sys     0m0.192s
+
+level7  20/20
+real    0m14.874s
+user    2m19.462s
+sys     0m2.061s
+
+識別力順の走査
+level1  20/20
+real    0m0.527s
+user    0m4.555s
+sys     0m0.174s
+
+level2  20/20
+real    0m2.341s
+user    0m20.071s
+sys     0m1.379s
+
+level3  20/20
+real    0m1.320s
+user    0m11.110s
+sys     0m0.433s
+
+level4  20/20
+real    0m5.241s
+user    0m52.198s
+sys     0m0.127s
+
+level5  20/20
+real    0m3.528s
+user    0m36.024s
+sys     0m0.392s
+
+level6  20/20
+real    0m3.767s
+user    0m37.990s
+sys     0m0.405s
+
+level7  20/20
+real    0m13.541s
+user    2m7.811s
+sys     0m2.005s
+
+同一入力画像の全変種を1プロセスに統合する
+

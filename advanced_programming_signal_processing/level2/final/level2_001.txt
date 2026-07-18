@@ -1,1 +1,1 @@
-airgun_women_syufu 384 174 64 59 0
+ocean_beach_kinzokutanchi 445 1 64 64 0
